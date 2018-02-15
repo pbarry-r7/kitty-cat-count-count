@@ -41,36 +41,40 @@ def verify_repo(owner, repo):
 	except:
 		return None
 
-def tally_repo_pr_reactions(owner, repo):
+# Tally up all the reactions for PRs or issues...
+def tally_repo_reactions(owner, repo, api_endpoint_func):
 	try:
-		prs = urllib2.urlopen(gh_request(api_repo_prs_endpoint(owner, repo), REQUEST_HEADERS))
-		if prs.getcode() != 200:
+		items = urllib2.urlopen(gh_request(api_endpoint_func(owner, repo), REQUEST_HEADERS))
+		if items.getcode() != 200:
 			return {}
 		full_tally = {}
-		prs_json = json.loads(prs.read())
-		for pr in prs_json:
-			pr_tally = {}
+		items_json = json.loads(items.read())
+		for item in items_json:
+			tally = {}
 			stdout.write(".")
 			stdout.flush()
-			reactions = urllib2.urlopen(gh_request(api_repo_reactions_endpoint(owner, repo, pr["number"]), REQUEST_HEADERS))
+			reactions = urllib2.urlopen(gh_request(api_repo_reactions_endpoint(owner, repo, item["number"]), REQUEST_HEADERS))
 			if reactions.getcode() != 200:
                         	return {}
 			reactions_json = json.loads(reactions.read())
 			for reaction in reactions_json:
-				if reaction["content"] in pr_tally:
-					pr_tally[reaction["content"]] += 1
+				if reaction["content"] in tally:
+					tally[reaction["content"]] += 1
 				else:
-					pr_tally[reaction["content"]] = 1
-			full_tally[str(pr["number"])] = pr_tally
+					tally[reaction["content"]] = 1
+			full_tally[str(item["number"])] = tally
 		print " Done."
 		return full_tally
 	except:
 		return {}
 
-def tally_repo_issue_reactions(owner, repo):
-	# Same mechanism as used for tallying PR reactions...
-	return tally_repo_pr_reactions(owner, repo)
+def tally_repo_pr_reactions(owner, repo):
+	return tally_repo_reactions(owner, repo, api_repo_prs_endpoint)
 
+def tally_repo_issue_reactions(owner, repo):
+	return tally_repo_reactions(owner, repo, api_repo_issues_endpoint)
+
+# Save our final tally to a file (JSON format)...
 def save_results(owner, repo, item_type, data):
 	filename = owner + "_" + repo + "_" + item_type + ".out"
 	try:

@@ -1,0 +1,8 @@
+{
+	"rapid7": {
+		"metasploit-framework": {
+			"PRs": true,
+			"Issues": true
+		}
+	}
+}

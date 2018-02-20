@@ -29,14 +29,18 @@ to the user.
 ## OAuth Token
 
 This script uses a [GitHub OAuth token](https://github.com/blog/1509-personal-api-tokens) in order to get 
-around the [60-API-queries-per-hour limit](https://developer.github.com/v3/#rate-limiting) that unauthenticated API queries are held to by GitHub
-(queries using an OAuth token are allowed up to 5000 API queries per hour!).
+around the [60-API-queries-per-hour limit](https://developer.github.com/v3/#rate-limiting) that unauthenticated
+API queries are held to by GitHub (queries using an OAuth token are allowed up to 5000 API queries per hour!).
+
+Once you have an OAuth token, create a new environment variable named KCCC_OAUTH_TOKEN and set its value to the
+token.  The kitty-ccc.py script will look for the OAuth token to be used in this env var.
 
 Using an OAuth Token also allows this script to work with private GitHub repos.
 
 ## Example Run
 
 ```
+$ export KCCC_OAUTH_TOKEN=<my OAuth token value>
 $ ./kitty-ccc.py
 Located GitHub repo 'rapid7/metasploit-framework':
  - Counting PR reactions................................. Done.

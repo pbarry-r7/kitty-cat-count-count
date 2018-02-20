@@ -5,9 +5,10 @@ import json
 import urllib2
 import re
 from sys import stdout,exit
+from os import environ
 
 # Consts...
-OAUTH_TOKEN = "<put token here, see https://github.com/blog/1509-personal-api-tokens on how to create a personal token>"
+OAUTH_TOKEN = environ["KCCC_OAUTH_TOKEN"]
 REQUEST_HEADERS = {
 	"Authorization": "token " + OAUTH_TOKEN,
 	"Accept": "application/vnd.github.squirrel-girl-preview" # see https://developer.github.com/changes/2016-05-12-reactions-api-preview/

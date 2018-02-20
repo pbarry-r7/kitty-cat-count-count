@@ -3,6 +3,7 @@
 # Module depdencies should be listed here...
 import json
 import urllib2
+import re
 from sys import stdout,exit
 
 # Consts...
@@ -15,13 +16,13 @@ CONFIG_FILENAME = "config.json"
 
 # Functions...
 def api_repo_endpoint(owner, repo):
-	return "https://api.github.com/repos/" + owner + "/" + repo
+	return "https://api.github.com/repos/" + owner + "/" + repo 
 
-def api_repo_prs_endpoint(owner, repo):
-	return api_repo_endpoint(owner, repo) + "/pulls"
+def api_repo_prs_endpoint(owner, repo, page_num):
+	return api_repo_endpoint(owner, repo) + "/pulls" + "?page=" + str(page_num)
 
-def api_repo_issues_endpoint(owner, repo):
-	return api_repo_endpoint(owner, repo) + "/issues"
+def api_repo_issues_endpoint(owner, repo, page_num):
+	return api_repo_endpoint(owner, repo) + "/issues" + "?page=" + str(page_num)
 
 def api_repo_reactions_endpoint(owner, repo, issue_num):
 	return api_repo_endpoint(owner, repo) + "/issues/" + str(issue_num) + "/reactions"
@@ -44,27 +45,42 @@ def verify_repo(owner, repo):
 # Tally up all the reactions for PRs or issues...
 def tally_repo_reactions(owner, repo, api_endpoint_func):
 	try:
-		items = urllib2.urlopen(gh_request(api_endpoint_func(owner, repo), REQUEST_HEADERS))
-		if items.getcode() != 200:
-			return {}
 		full_tally = {}
-		items_json = json.loads(items.read())
-		for item in items_json:
-			tally = {}
-			stdout.write(".")
-			stdout.flush()
-			reactions = urllib2.urlopen(gh_request(api_repo_reactions_endpoint(owner, repo, item["number"]), REQUEST_HEADERS))
-			if reactions.getcode() != 200:
-                        	return {}
-			reactions_json = json.loads(reactions.read())
-			for reaction in reactions_json:
-				if reaction["content"] in tally:
-					tally[reaction["content"]] += 1
-				else:
-					tally[reaction["content"]] = 1
-			full_tally[str(item["number"])] = {}
-			full_tally[str(item["number"])]["title"] = item["title"]
-			full_tally[str(item["number"])]["reactions"] = tally
+		curr_page = 1
+		last_page = 0
+		while True:
+			items = urllib2.urlopen(gh_request(api_endpoint_func(owner, repo, curr_page), REQUEST_HEADERS))
+			if items.getcode() != 200:
+				return {}
+			if last_page == 0:
+				headers = items.info()
+				m = re.search('page=(.*)>; rel="last"', headers["Link"])
+				tmp_buffer = re.sub(r'.*page=', "", m.group(0))
+				last_page = int(re.sub(r'>; rel="last"', "", tmp_buffer))
+			items_json = json.loads(items.read())
+			for item in items_json:
+				if api_endpoint_func == api_repo_issues_endpoint and "pull_request" in item:
+					# Some PR's are considered issues, do NOT count them here...
+					# See https://developer.github.com/v3/issues/#list-issues-for-a-repository
+					continue
+				tally = {}
+				stdout.write(".")
+				stdout.flush()
+				reactions = urllib2.urlopen(gh_request(api_repo_reactions_endpoint(owner, repo, item["number"]), REQUEST_HEADERS))
+				if reactions.getcode() != 200:
+					return {}
+				reactions_json = json.loads(reactions.read())
+				for reaction in reactions_json:
+					if reaction["content"] in tally:
+						tally[reaction["content"]] += 1
+					else:
+						tally[reaction["content"]] = 1
+				full_tally[str(item["number"])] = {}
+				full_tally[str(item["number"])]["title"] = item["title"]
+				full_tally[str(item["number"])]["reactions"] = tally
+			if curr_page == last_page:
+				break
+			curr_page += 1
 		print " Done."
 		return full_tally
 	except:

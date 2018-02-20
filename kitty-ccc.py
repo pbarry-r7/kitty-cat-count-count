@@ -113,7 +113,7 @@ try:
 			repo_contents = verify_repo(owner, repo)
 			if repo_contents is None:
 				print "Repo '" + repo + "' failed to verify as a valid, accessible repo.  Skipping..."
-			print "Located GitHub repo '" + repo + "':"
+			print "Located GitHub repo '" + owner + "/" + repo + "':"
 			if prs:
 				stdout.write(" - Counting PR reactions...")
 				repo_pr_reaction_counts = tally_repo_pr_reactions(owner, repo)

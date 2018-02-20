@@ -62,7 +62,9 @@ def tally_repo_reactions(owner, repo, api_endpoint_func):
 					tally[reaction["content"]] += 1
 				else:
 					tally[reaction["content"]] = 1
-			full_tally[str(item["number"])] = tally
+			full_tally[str(item["number"])] = {}
+			full_tally[str(item["number"])]["title"] = item["title"]
+			full_tally[str(item["number"])]["reactions"] = tally
 		print " Done."
 		return full_tally
 	except:
